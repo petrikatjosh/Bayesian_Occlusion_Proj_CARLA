@@ -46,7 +46,7 @@ def main():
         # truck.set_target_velocity(carla.Vector3D(x=-2.7, y=0, z=0))
 
         # attempting slower speed to create more realistic scenerio
-        truck.set_target_velocity(carla.Vector3D(x=-2.3, y=0, z=0))
+        truck.set_target_velocity(carla.Vector3D(x=-1.6, y=0, z=0))
 
         # 5. Spawn Walker
         walker_bp = bp_lib.find('walker.pedestrian.0001')
