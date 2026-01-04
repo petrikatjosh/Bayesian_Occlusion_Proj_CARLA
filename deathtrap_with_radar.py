@@ -71,6 +71,7 @@ def main():
 
         # Walker Destination
         target_loc = carla.Location(x=-65.96, y=35.89, z=0) 
+
         
         # --- SNIPER MODIFICATION 2: TURN ON THE BRAIN ---
         # Initialize the controller you wrote in safety_controller.py
@@ -105,10 +106,15 @@ def main():
             truck_loc = truck.get_location()
 
             # --- [NEW CODE START] ---
+
+            # Get the car's current transform (Location + Rotation)
+            car_transform = ego_vehicle.get_transform()
+
+
             # Force the Spectator to follow the car from the sky
             spectator_transform = carla.Transform(
                 ego_loc + carla.Location(z=35), # Height of 35 meters
-                carla.Rotation(pitch=-90)       # Pitch -90 looks straight down
+                carla.Rotation(pitch=-90, yaw=180, roll=0) # Pitch -90 looks straight down
             )
             spectator.set_transform(spectator_transform)
             # --- [NEW CODE END] ---
