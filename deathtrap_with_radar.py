@@ -60,8 +60,8 @@ def main():
         # --- CAMERA SETUP (Kept exactly as you had it) ---
         image_queue = queue.Queue()
         camera_bp = bp_lib.find('sensor.camera.rgb')
-        camera_bp.set_attribute('image_size_x', '800')
-        camera_bp.set_attribute('image_size_y', '600')
+        camera_bp.set_attribute('image_size_x', '1280') # <-- New (16:9 HD Standard)
+        camera_bp.set_attribute('image_size_y', '720')  # <-- New
         camera_bp.set_attribute('fov', '90')
         camera_transform = carla.Transform(carla.Location(x=-0.3, y=-0.4, z=1.2))
         camera = world.spawn_actor(camera_bp, camera_transform, attach_to=ego_vehicle)
