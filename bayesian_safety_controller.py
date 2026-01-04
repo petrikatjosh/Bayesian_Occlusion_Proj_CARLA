@@ -55,10 +55,26 @@ class SniperController:
         # This prevents the "Philosopher Crash" where we think but don't act.
         control = carla.VehicleControl()
 
+        # --- LAYER 0: THE REFLEX (System 1) ---
         if is_pedestrian_visible:
             print("*** VISIBLE THREAT DETECTED -> EMERGENCY BRAKE ***")
             control.throttle = 0.0
             control.brake = 1.0
+            
+            # --- FIX: Log and Draw BEFORE returning ---
+            
+            # 1. Update the HUD
+            # We pass Risk=1.0 (Certainty). 
+            # We rely on 'custom_status' to ensure the Red Text appears.
+            self._draw_live_debug(risk=1.0, stopping_dist=0.0, safety_margin=-10.0, custom_status="!!! PEDESTRIAN DETECTED !!!")
+
+            # 2. Force write to CSV
+            self.step_counter += 1
+            # Log as: Risk=1.0000 (Mathematically Correct)
+            log_line = f"{self.step_counter},0.00,0.00,0.00,-10.00,1.0000\n"
+            self.log_file.write(log_line)
+            self.log_file.flush()
+
             return control
         
         # 1. Measure Physics (Inputs)
