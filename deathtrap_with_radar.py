@@ -7,7 +7,7 @@ import cv2
 import queue
 
 # from updated_safety_controller import SniperController
-from updated_safety_controller_copy import SniperController
+from bayesian_safety_controller import SniperController
 
 
 def main():
@@ -91,7 +91,7 @@ def main():
             if length > 0.5:
                 direction_norm = carla.Vector3D(direction_vector.x / length, direction_vector.y / length, 0.0)
                 control = carla.WalkerControl()
-                control.speed = 2.9
+                control.speed = 2.1
                 control.direction = direction_norm 
                 control.jump = False
                 walker.apply_control(control)
