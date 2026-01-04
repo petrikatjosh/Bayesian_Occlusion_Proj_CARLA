@@ -199,7 +199,10 @@ class SniperController:
         loc.z += 2.0 
 
         # Color Logic: Green = Safe, Red = Danger
-        if risk > self.risk_threshold:
+        if custom_status:
+            color = carla.Color(255, 0, 0) # BRIGHT RED for overrides
+            status = custom_status
+        elif risk > self.risk_threshold:
             color = carla.Color(255, 0, 0) # RED
             status = "BRAKING (RISK HIGH)"
         elif risk == 0.0:
