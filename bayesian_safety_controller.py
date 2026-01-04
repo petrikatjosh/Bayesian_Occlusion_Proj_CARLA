@@ -159,44 +159,6 @@ class SniperController:
         
         return posterior_risk
 
-    # def _update_bayesian_belief(self, speed, d_occ):
-    #     """
-    #     THE MATH SECTION:
-    #     Calculates P(x_k | z_k) using Physics-Informed Likelihood.
-    #     """
-    #     # 1. Physics Model (Kinematics)
-    #     # Stopping Distance: d = v^2 / 2ug
-    #     safe_stopping_dist = (speed ** 2) / (2 * 0.6 * 9.81)
-
-    #     # The "Paranoia" Buffer
-    #     # TUNING: We subtract 5 meters. 
-    #     # This means we panic even if we technically have enough room.
-    #     PARANOIA_BUFFER = 5.0
-        
-    #     # 2. The "Physics-Informed Likelihood" P(z|x)
-    #     # We compare Real Distance vs. Stopping Distance
-    #     if d_occ < 0.1: d_occ = 0.1 # Safety check
-        
-    #     # Margin: Positive = Safe, Negative = Dangerous
-    #     safety_margin = d_occ - (safe_stopping_dist + PARANOIA_BUFFER)
-        
-    #     # Sigmoid Function: Squashes the margin into a 0.0 - 1.0 probability
-    #     # This is the "Classifier" part
-    #     # current_likelihood = 1.0 / (1.0 + np.exp(0.5 * safety_margin))
-    #     # changed slope from 0.5 to 0.8 for sharper reaction
-    #     current_likelihood = 1.0 / (1.0 + np.exp(0.5 * safety_margin))
-        
-    #     # 3. Recursive Update (The Bayesian Filter)
-    #     # New Belief = (Alpha * New Data) + ((1-Alpha) * Old Belief)
-    #     posterior_risk = (self.alpha * current_likelihood) + ((1 - self.alpha) * self.prior_risk)
-        
-    #     # Save state for the next frame
-    #     self.prior_risk = posterior_risk
-        
-    #     # Debug for your CSV Graph
-    #     # print(f"DEBUG: Speed={speed:.1f} | Likelihood={current_likelihood:.2f} | Posterior={posterior_risk:.2f}")
-        
-    #     return posterior_risk
 
     def _draw_live_debug(self, risk, stopping_dist, safety_margin):
         """
