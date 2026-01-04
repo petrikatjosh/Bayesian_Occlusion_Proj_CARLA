@@ -25,7 +25,7 @@ def main():
         # 3. Spawn Ego Vehicle
         ego_bp = bp_lib.find('vehicle.tesla.model3')
         # start_loc = carla.Location(x=-50.5, y=13, z=1.0)
-        start_loc = carla.Location(x=-45, y=13, z=1.0) # spawning the car further back
+        start_loc = carla.Location(x=-47, y=13, z=1.0) # spawning the car further back
 
         # Move back 9 meters to give it a "Run Up"
         # start_loc = carla.Location(x=-30, y=13, z=1.0)
