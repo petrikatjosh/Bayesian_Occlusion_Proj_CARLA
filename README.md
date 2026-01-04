@@ -38,5 +38,5 @@ The controller operates on a modified version of "Algorithm 3" (Wang et al., 202
 ## 📚 References
 This project is an implementation and adaptation of the methods proposed in:
 
-* **Wang, H., et al. (2025).** "Safe Driving in Occluded Environments" 
+* **Wang, H., et al. (2025).** "Safe Driving in Occluded Environments" arXiv preprint arXiv:2510.13114
 * *Specific Adaptation:* Implemented "Algorithm 3" (Risk Belief Update), adding kinematic constraints and a hysteresis controller to stabilize behavior within the CARLA physics engine.
