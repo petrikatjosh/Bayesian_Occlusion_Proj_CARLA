@@ -77,7 +77,7 @@ def main():
         brain = SniperController(ego_vehicle)
         
         # Define the "Danger Zone" (The intersection/crossing point)
-        # Based on your walker coordinates, the crossing is around x=-66
+        # Based on the walker coordinates, the crossing is around x=-66
         intersection_loc = carla.Location(x=-66, y=13, z=0)
 
         print("Starting Simulation with SNIPER CONTROLLER...")
@@ -103,6 +103,15 @@ def main():
             # A. Get Data
             ego_loc = ego_vehicle.get_location()
             truck_loc = truck.get_location()
+
+            # --- [NEW CODE START] ---
+            # Force the Spectator to follow the car from the sky
+            spectator_transform = carla.Transform(
+                ego_loc + carla.Location(z=35), # Height of 35 meters
+                carla.Rotation(pitch=-90)       # Pitch -90 looks straight down
+            )
+            spectator.set_transform(spectator_transform)
+            # --- [NEW CODE END] ---
             
             # B. Calculate Distances
             dist_to_int = ego_loc.distance(intersection_loc)
