@@ -188,7 +188,7 @@ class SniperController:
         return posterior_risk
 
 
-    def _draw_live_debug(self, risk, stopping_dist, safety_margin):
+    def _draw_live_debug(self, risk, stopping_dist, safety_margin, custom_status=None):
         """
         Draws floating text above the car in the 3D simulation window.
         """
