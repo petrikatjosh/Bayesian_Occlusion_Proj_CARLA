@@ -54,6 +54,7 @@ class SniperController:
         # If we physically see the pedestrian in front of us, STOP.
         # This prevents the "Philosopher Crash" where we think but don't act.
         control = carla.VehicleControl()
+
         if is_pedestrian_visible:
             print("*** VISIBLE THREAT DETECTED -> EMERGENCY BRAKE ***")
             control.throttle = 0.0
@@ -77,20 +78,34 @@ class SniperController:
         #     control.throttle = 0.0
         #     control.brake = 1.0  # Emergency Stop
 
+        # 3. Decision Logic
         if current_risk > self.risk_threshold:
-            # --- THE FIX: ACTIVE PERCEPTION (CREEP MODE) ---
-            # If we are stuck (high risk) but stopped, we need to "peek".
-            # We allow a tiny violation of the safety constraint to gather info.
-            if speed_ms < 0.5: 
-                print(f"*** RISK HIGH ({current_risk:.2f}) -> CREEPING TO PEEK ***")
-                control.throttle = 0.3 # Gentle gas
-                control.brake = 0.0
+            
+            # --- [NEW] SPLIT LOGIC: CREEP vs. PANIC ---
+            
+            # CASE A: CRITICAL DANGER (Risk > 0.85)
+            # This covers your "Radar" concern. If risk spikes high, we kill the creep.
+            if current_risk > 0.85:
+                 print(f"*** RISK CRITICAL ({current_risk:.2f}) -> FULL STOP ***")
+                 control.throttle = 0.0
+                 control.brake = 1.0
+            
+            # CASE B: CAUTIOUS CREEP (Risk 0.60 to 0.85)
+            # We allow movement, but cap the speed.
             else:
-                # If we are moving too fast, brake to get back to "Creep" speed
-                print(f"*** RISK HIGH ({current_risk:.2f}) -> BRAKING ***")
-                control.throttle = 0.0
-                control.brake = min((current_risk - self.risk_threshold) * 2.0, 1.0)
-
+                target_creep_speed = 2.0 # m/s
+                
+                if speed_ms < target_creep_speed:
+                    # We are below creep limit -> Gentle Throttle
+                    print(f"*** RISK HIGH ({current_risk:.2f}) -> CREEPING ({speed_ms:.1f}/{target_creep_speed} m/s) ***")
+                    control.throttle = 0.3
+                    control.brake = 0.0
+                else:
+                    # We are going too fast for a creep -> Coast/Feather Brake
+                    # (Note: We do NOT slam brake here, preventing the oscillation)
+                    control.throttle = 0.0
+                    control.brake = 0.0 # Just coast to slow down
+        
         else:
             # Nominal Controller (Cruise Control)
             target_speed = 6.0 # m/s
@@ -102,10 +117,7 @@ class SniperController:
                 control.brake = 0.0
 
         # --- 4. VISUAL DEBUGGING ---
-        # Using the stored variables from 'self' instead of calculating them again
         self._draw_live_debug(current_risk, self.debug_stopping_dist, self.debug_margin)
-                
-        # return control
                 
         return control
 
