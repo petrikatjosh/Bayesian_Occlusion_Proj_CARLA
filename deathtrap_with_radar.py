@@ -170,7 +170,7 @@ def main():
                 
                 # Now 'image' holds the most recent frame.
                 i = np.array(image.raw_data)
-                i2 = i.reshape((600, 800, 4))
+                i2 = i.reshape((720, 1280, 4))
                 im_display = i2[:, :, :3]
                 cv2.imshow("Ego Vehicle Front Camera", im_display)
                 cv2.waitKey(1)
