@@ -93,7 +93,7 @@ class SniperController:
             # CASE B: CAUTIOUS CREEP (Risk 0.60 to 0.85)
             # We allow movement, but cap the speed.
             else:
-                target_creep_speed = 2.25 # m/s
+                target_creep_speed = 2.5 # m/s
                 
                 if speed_ms < target_creep_speed:
                     # We are below creep limit -> Gentle Throttle
