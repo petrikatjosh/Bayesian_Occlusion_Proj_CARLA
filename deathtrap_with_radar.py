@@ -81,7 +81,7 @@ def main():
         # Based on the walker coordinates, the crossing is around x=-66
         intersection_loc = carla.Location(x=-66, y=13, z=0)
 
-        print("Starting Simulation with SNIPER CONTROLLER...")
+        print("Starting Simulation with CONTROLLER...")
         
         while True:
             # --- 1. WALKER CONTROL (Keep this existing logic) ---
