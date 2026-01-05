@@ -221,4 +221,4 @@ class SniperController:
 
         # Draw the string in the world (Life_time=0.1s so it updates flicker-free)
         world.debug.draw_string(loc, debug_text, draw_shadow=True, 
-                                color=color, life_time=0.1)
+                                color=color, life_time=0.05)
