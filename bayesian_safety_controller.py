@@ -200,8 +200,8 @@ class SniperController:
 
         # Color Logic: Green = Safe, Red = Danger
         if custom_status:
-            # Magenta
-            color = carla.Color(255, 0, 255)
+            # WHITE
+            color = carla.Color(255, 255, 255) 
             status = custom_status
         elif risk > self.risk_threshold:
             # YELLOW
