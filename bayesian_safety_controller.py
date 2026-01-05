@@ -206,7 +206,7 @@ class SniperController:
 
         # 2. Check for any OTHER custom status (Pedestrian/Emergency)
         elif custom_status: 
-            color = carla.Color(255, 128, 0) # SAFETY ORANGE (or White)
+            color = carla.Color(255, 255, 255) # SAFETY ORANGE (or White)
             status = custom_status # This will print "PEDESTRIAN DETECTED" or whatever you sent
 
         # 3. If no custom status, check Risk
