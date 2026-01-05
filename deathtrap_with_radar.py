@@ -113,7 +113,7 @@ def main():
 
             # Force the Spectator to follow the car from the sky
             spectator_transform = carla.Transform(
-                ego_loc + carla.Location(z=20), # Height of 35 meters
+                ego_loc + carla.Location(z=35), # Height of 35 meters
                 carla.Rotation(pitch=-90, yaw=180, roll=0) # Pitch -90 looks straight down
             )
             spectator.set_transform(spectator_transform)
