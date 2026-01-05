@@ -2,8 +2,8 @@
 
 A probabilistic safety controller for autonomous vehicles designed to handle **sensor occlusion** and **uncertainty**. This project implements a Recursive Bayesian Filter to estimate collision risk in "blind spots" (e.g., pedestrians hidden behind trucks) where deterministic AEB (Automatic Emergency Braking) often fails.
 
-![Demo GIF Placeholder]
-*(Note: Full demo video available in the repository root)*
+## Demo Link
+https://youtu.be/LyjMGx0QQQ4
 
 ## ⚡ Key Capabilities
 * **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop ($P(\text{Risk} | \text{Observation})$) to smooth noisy sensor data.
