@@ -26,9 +26,13 @@ The controller operates on a modified version of "Algorithm 3" (Wang et al., 202
 
 ## 🚀 How to Run
 1.  Launch the CARLA Simulator (Town 10).
-2.  Run the controller:
+2.  Install the controller:
     ```bash
-    python bayesian_safety_controller.py
+    bayesian_safety_controller.py
+    ```
+3.  In the same folder as the previous file, install the file and run:
+    ```bash
+    python deathtrap_with_radar.py
     ```
 
 ## ⚠️ Current Limitations
