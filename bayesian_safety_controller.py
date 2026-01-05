@@ -198,18 +198,22 @@ class SniperController:
         # Shift text 2 meters up so it floats above the roof
         loc.z += 2.0 
 
-        # Color Logic: Green = Safe, Red = Danger
-        if custom_status:
-            # WHITE
-            color = carla.Color(255, 255, 255) 
-            status = custom_status
+        # 1. Check for PASSING first (Specific String)
+        if custom_status == "PASSING MODE" or custom_status == "PASSING":
+            color = carla.Color(0, 255, 255) # CYAN
+            status = "PASSING MODE"
+
+        # 2. Check for any OTHER custom status (Pedestrian/Emergency)
+        elif custom_status: 
+            color = carla.Color(255, 128, 0) # SAFETY ORANGE (or White)
+            status = custom_status # This will print "PEDESTRIAN DETECTED" or whatever you sent
+
+        # 3. If no custom status, check Risk
         elif risk > self.risk_threshold:
-            # YELLOW
-            color = carla.Color(255, 255, 0)
+            color = carla.Color(255, 255, 0) # YELLOW
             status = "BRAKING (RISK HIGH)"
-        elif risk == 0.0:
-            color = carla.Color(0, 255, 255) # CYAN (Passing Logic Active)
-            status = "PASSING MODE (FORCED SAFE)"
+
+        # 4. Default to Cruising
         else:
             color = carla.Color(0, 255, 0) # GREEN
             status = "CRUISING"
