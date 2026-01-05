@@ -200,12 +200,12 @@ class SniperController:
 
         # Color Logic: Green = Safe, Red = Danger
         if custom_status:
-            # CHANGED: Added 50 Green to make it "Safety Orange-Red" (Much easier to read)
-            color = carla.Color(255, 60, 0) 
+            # RED
+            color = carla.Color(255, 0, 0)
             status = custom_status
         elif risk > self.risk_threshold:
-            # CHANGED: Same here. Pure (255,0,0) blends into shadows. (255, 50, 50) pops more.
-            color = carla.Color(255, 50, 50) 
+            # YELLOW
+            color = carla.Color(255, 255, 0)
             status = "BRAKING (RISK HIGH)"
         elif risk == 0.0:
             color = carla.Color(0, 255, 255) # CYAN (Passing Logic Active)
