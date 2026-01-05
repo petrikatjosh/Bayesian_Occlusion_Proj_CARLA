@@ -61,16 +61,12 @@ class SniperController:
             control.throttle = 0.0
             control.brake = 1.0
             
-            # --- FIX: Log and Draw BEFORE returning ---
-            
-            # 1. Update the HUD
-            # We pass Risk=1.0 (Certainty). 
-            # We rely on 'custom_status' to ensure the Red Text appears.
-            self._draw_live_debug(risk=1.0, stopping_dist=0.0, safety_margin=-10.0, custom_status="!!! PEDESTRIAN DETECTED !!!")
+            # --- FIX: Log and Draw with "PEDESTRIAN" status ---
+            # This triggers your Orange/White "Pedestrian" color logic
+            self._draw_live_debug(risk=1.0, stopping_dist=0.0, safety_margin=-10.0, custom_status="PEDESTRIAN DETECTED! BRAKING!")
 
-            # 2. Force write to CSV
+            # Force write to CSV
             self.step_counter += 1
-            # Log as: Risk=1.0000 (Mathematically Correct)
             log_line = f"{self.step_counter},0.00,0.00,0.00,-10.00,1.0000\n"
             self.log_file.write(log_line)
             self.log_file.flush()
@@ -133,7 +129,12 @@ class SniperController:
                 control.brake = 0.0
 
         # --- 4. VISUAL DEBUGGING ---
-        self._draw_live_debug(current_risk, self.debug_stopping_dist, self.debug_margin)
+        if self.debug_margin > 50.0:
+            # Triggers Cyan Text
+            self._draw_live_debug(current_risk, self.debug_stopping_dist, self.debug_margin, custom_status="PASSING MODE")
+        else:
+            # Triggers Green/Yellow Logic (Standard Driving)
+            self._draw_live_debug(current_risk, self.debug_stopping_dist, self.debug_margin, custom_status=None)
                 
         return control
 
