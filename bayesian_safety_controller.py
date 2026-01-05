@@ -200,10 +200,12 @@ class SniperController:
 
         # Color Logic: Green = Safe, Red = Danger
         if custom_status:
-            color = carla.Color(255, 0, 0) # BRIGHT RED for overrides
+            # CHANGED: Added 50 Green to make it "Safety Orange-Red" (Much easier to read)
+            color = carla.Color(255, 60, 0) 
             status = custom_status
         elif risk > self.risk_threshold:
-            color = carla.Color(255, 0, 0) # RED
+            # CHANGED: Same here. Pure (255,0,0) blends into shadows. (255, 50, 50) pops more.
+            color = carla.Color(255, 50, 50) 
             status = "BRAKING (RISK HIGH)"
         elif risk == 0.0:
             color = carla.Color(0, 255, 255) # CYAN (Passing Logic Active)
@@ -221,4 +223,4 @@ class SniperController:
 
         # Draw the string in the world (Life_time=0.1s so it updates flicker-free)
         world.debug.draw_string(loc, debug_text, draw_shadow=True, 
-                                color=color, life_time=0.06)
+                                color=color, life_time=0.0515)
