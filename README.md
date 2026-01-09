@@ -6,7 +6,7 @@ A probabilistic safety controller for autonomous vehicles designed to handle **s
 https://youtu.be/UJPgLf01mFs?si=eCZaPCiRyMzWw651
 
 ## ⚡ Key Capabilities
-* **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop ![P(Risk|Observation)](https://latex.codecogs.com/svg.image?\bg{1e1e1e}\fg{FFFFFF}P(\text{Risk}\mid\text{Observation}))
+* **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop ![P(Risk|Observation)](https://latex.codecogs.com/svg.image?\fg{FFFFFF}P(\text{Risk}\mid\text{Observation}))
 
  to smooth noisy sensor data.
 * **Occlusion Handling:** Maintains a "memory" of risk when targets are briefly occluded, preventing the car from accelerating recklessly into blind zones.
