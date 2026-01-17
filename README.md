@@ -3,10 +3,10 @@
 A probabilistic safety controller for autonomous vehicles designed to handle **sensor occlusion** and **uncertainty**. This project implements a Recursive Bayesian Filter to estimate collision risk in "blind spots" (e.g., pedestrians hidden behind trucks) where deterministic AEB (Automatic Emergency Braking) often fails.
 
 ## Demo Link
-https://youtu.be/LyjMGx0QQQ4
+https://youtu.be/UJPgLf01mFs?si=eCZaPCiRyMzWw651
 
 ## ⚡ Key Capabilities
-* **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop ($P(\text{Risk} | \text{Observation})$) to smooth noisy sensor data.
+* **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop $P(\text{Risk}\mid\text{Observation})$ to smooth noisy sensor data.
 * **Occlusion Handling:** Maintains a "memory" of risk when targets are briefly occluded, preventing the car from accelerating recklessly into blind zones.
 * **Hysteresis Control:** Implements a "Creep Mode" (max 2.75 m/s) to safely navigate high-risk zones without control oscillation (stop-go jerking).
 
@@ -26,9 +26,13 @@ The controller operates on a modified version of "Algorithm 3" (Wang et al., 202
 
 ## 🚀 How to Run
 1.  Launch the CARLA Simulator (Town 10).
-2.  Run the controller:
+2.  Install the controller:
     ```bash
-    python bayesian_safety_controller.py
+    bayesian_safety_controller.py
+    ```
+3.  In the same folder as the previous file, install the file and run:
+    ```bash
+    python deathtrap_with_radar.py
     ```
 
 ## ⚠️ Current Limitations
