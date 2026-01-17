@@ -8,6 +8,7 @@ import queue
 
 # from updated_safety_controller import SniperController
 from bayesian_safety_controller import SniperController
+from metrics_logger import ResearchLogger
 
 
 def main():
@@ -82,8 +83,11 @@ def main():
         intersection_loc = carla.Location(x=-66, y=13, z=0)
 
         print("Starting Simulation with CONTROLLER...")
+
+        logger = ResearchLogger()
         
         while True:
+            loop_start = time.time() # <--- 1. START CLOCK
             # --- 1. WALKER CONTROL (Keep this existing logic) ---
             current_loc = walker.get_location()
             direction_vector = current_loc - target_loc 
@@ -174,6 +178,8 @@ def main():
                 im_display = i2[:, :, :3]
                 cv2.imshow("Ego Vehicle Front Camera", im_display)
                 cv2.waitKey(1)
+
+            logger.log_step(ego_vehicle, map, loop_start) # <--- 2. LOG DATA
 
             # Important: Add World Tick if running in synchronous mode
             time.sleep(0.05)
