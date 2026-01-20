@@ -1,4 +1,4 @@
-# Bayesian Safety Controller for CARLA
+<img width="1000" height="800" alt="system_latency_and_CTE" src="https://github.com/user-attachments/assets/1840a969-4bdd-46b7-9707-4568481bd320" /># Bayesian Safety Controller for CARLA
 
 I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a Recursive Bayesian Filter that maintains a belief state over time, decaying gradually rather than snapping to zero.
 
@@ -122,22 +122,26 @@ Processing latency averaged around 5 milliseconds per loop iteration. Plenty fas
 ## Visualizations
 
 ### Temporal Behavior
-![Time Series Analysis](figures/time_series_analysis.png)
+![Time Series Analysis](figures/time_series_analysis.png<img width="1400" height="1200" alt="timeseriesanalysis" src="https://github.com/user-attachments/assets/5982b866-5115-448f-9d8f-9e419f62dc6e" />
 
-This plot shows the five phases in sequence. You can see the risk spike at pedestrian detection, the speed drop to zero during emergency stop, and the gradual recovery afterward.
+
+This plot shows the five phases in sequence. You can see the risk spike at pedestrian detection, the speed drop to zero during emergency stop, and the gradual recovery afterward. 
 
 ### Risk Distribution
-![Risk Distribution](figures/risk_distribution.png)
+![Risk Distribution]<img width="1000" height="500" alt="riskdistribution" src="https://github.com/user-attachments/assets/fe5a8ddb-3d9a-424e-81f3-edecdbe0d602" />
 
-The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 1.0 is the emergency stop period.
 
+The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 0.8 represents the car's creep speed beside the truck in response to the potential occlusion threat.
 ### Variable Correlations
-![Scatter Matrix](figures/scatter_matrix.png)
+![Scatter Matrix]<img width="1200" height="1200" alt="variablecorrelations" src="https://github.com/user-attachments/assets/b38cdb0b-a6ff-4538-893e-199948acd106" />
+
 
 ### System Latency
-![Research Metrics](figures/research_metrics.png)
+![Research Metrics]<img width="1000" height="800" alt="system_latency_and_CTE" src="https://github.com/user-attachments/assets/5250b487-4eec-4aff-ac08-75974629fbf9" />
 
-The latency spike at t=0 is initialization overhead. Steady-state latency sits around 5ms.
+
+
+The latency spike at t=0 is initialization overhead. Steady-state latency sits around 5ms. Cross-track error increases at the end because the controller is longitudinal-only. Lateral control was out of scope for this project.
 
 ---
 
