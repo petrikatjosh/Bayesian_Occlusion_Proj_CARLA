@@ -181,6 +181,12 @@ def main():
 
             logger.log_step(ego_vehicle, map, loop_start) # <--- 2. LOG DATA
 
+            # --- AUTO-END CONDITION ---
+            # End scenario when ego vehicle passes x=-95 (well past the intersection at x=-66)
+            if ego_loc.x < -95:
+                print("\n=== SCENARIO COMPLETE: Vehicle passed end point (x=-95) ===")
+                break
+
             # Important: Add World Tick if running in synchronous mode
             time.sleep(0.05)
 
