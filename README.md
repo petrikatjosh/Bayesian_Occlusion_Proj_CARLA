@@ -153,15 +153,22 @@ The pedestrian trajectory is not predicted. I react to current position only. Ad
 
 ---
 
-## Files
+## Project Structure
 
 ```
-bayesian_safety_controller.py    # Bayesian filter and control logic
-deathtrap_with_radar.py          # CARLA scenario setup and main loop
-metrics_logger.py                # Per-timestep data collection
-risk_log.csv                     # Output data for analysis
-figures/                         # Generated plots
+├── bayesian_safety_controller.py   # Core Bayesian filter + control logic
+├── deathtrap_with_radar.py         # CARLA scenario runner
+├── metrics_logger.py               # Data collection for analysis
+├── risk_log.csv                    # Output: timestep-by-timestep data
+├── README.md                       # This file
+└── figures/                        # Generated analysis plots
+    ├── time_series_analysis.png
+    ├── risk_distribution.png
+    ├── scatter_matrix.png
+    └── research_metrics.png
 ```
+
+
 
 ---
 
