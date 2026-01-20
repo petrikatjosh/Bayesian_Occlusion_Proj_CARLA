@@ -1,34 +1,23 @@
 # Bayesian Safety Controller for CARLA
 
-A probabilistic safety controller for autonomous vehicles designed to handle **sensor occlusion** and **uncertainty**. This project implements a Recursive Bayesian Filter to estimate collision risk in "blind spots" (e.g., pedestrians hidden behind trucks) where deterministic AEB (Automatic Emergency Braking) often fails.
+I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a Recursive Bayesian Filter that maintains a belief state over time, decaying gradually rather than snapping to zero.
 
-## Demo
-
-**Video Demonstration:** [https://youtu.be/UJPgLf01mFs](https://youtu.be/UJPgLf01mFs?si=eCZaPCiRyMzWw651)
+Demo: https://youtu.be/UJPgLf01mFs
 
 ---
 
-## Key Capabilities
+## The Problem I Solved
 
-- **Recursive Bayesian Filter:** Replaces instantaneous distance checks with a belief update loop to smooth noisy sensor data and maintain risk estimates over time.
-- **Occlusion Handling:** Maintains a "memory" of risk when targets are briefly occluded, preventing the car from accelerating recklessly into blind zones.
-- **Hysteresis Control:** Implements a "Creep Mode" (max 2.75 m/s) to safely navigate high-risk zones without control oscillation (stop-go jerking).
-- **Geometric Radar:** Uses dot-product cone detection to identify pedestrians directly in the vehicle's path.
+Standard AEB checks distance to obstacles every frame. If distance is less than stopping distance, brake. Otherwise, accelerate. This works fine in open environments. However, it breaks down in occlusion scenarios because the obstacle literally does not exist in the sensor data until it is too late.
+
+I wanted to build a controller that could reason about what it cannot see. Specifically, I needed the car to slow down when approaching a truck that might be hiding something, even though the sensors report nothing dangerous.
 
 ---
 
-## Test Scenario: "Deathtrap"
+## The Scenario
 
-A Tesla Model 3 approaches an intersection at 6 m/s while a delivery truck occludes a pedestrian crossing. The controller must:
+I set up a worst-case test in CARLA called the Deathtrap. A Tesla Model 3 drives at 6 m/s toward an intersection. A delivery truck in the adjacent lane blocks the view of a pedestrian who is about to cross. The pedestrian starts at y=21, walking toward y=35 at 2.1 m/s. The intersection is at x=-66. The car starts at x=-47.
 
-1. **Detect** the occlusion risk (truck blocking view)
-2. **Enter Creep Mode** before the intersection
-3. **Emergency brake** when pedestrian becomes visible
-4. **Recover** and safely depart
-
-**Outcome:** Zero collisions across all test runs.
-
-### Scenario Layout
 | Actor | Start Position | Behavior |
 |-------|---------------|----------|
 | Ego Vehicle (Tesla Model 3) | x=-47, y=13 | Controller-driven, target 6 m/s |
@@ -36,36 +25,41 @@ A Tesla Model 3 approaches an intersection at 6 m/s while a delivery truck occlu
 | Pedestrian | x=-65.75, y=21 | Crosses at 2.1 m/s toward y=35 |
 | Intersection | x=-66, y=13 | Danger zone |
 
+The timing is deliberately tight. If the car maintains 6 m/s, it will hit the pedestrian. If it brakes too early, it fails the efficiency requirement. The controller has to thread the needle: slow down enough to stop in time once the pedestrian becomes visible, but not so much that it crawls unnecessarily.
+
+I ran this scenario repeatedly and achieved zero collisions across all test runs.
+
 ---
 
-## System Architecture
+## How the Bayesian Filter Works
 
-The controller operates on a modified version of "Algorithm 3" from Wang et al. (2025):
+The filter maintains a prior risk value that updates every timestep. I compute a likelihood based on the current safety margin, then blend it with the prior using a learning rate alpha.
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Perception    │────▶│  Bayesian Filter │────▶│ Decision Logic  │
-│  (Sensors)      │     │  (Risk Update)   │     │ (Control Output)│
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-        │                        │                        │
-   - Velocity              - Prior Risk              - Emergency Stop
-   - Dist to Truck         - Likelihood              - Creep Mode
-   - Pedestrian Visible    - Posterior Risk          - Cruise Control
-```
-
-### Bayesian Update Rule
+The update rule:
 
 ```
-P(risk_k) = α · L(observation) + (1 - α) · P(risk_{k-1})
+posterior_risk = alpha * likelihood + (1 - alpha) * prior_risk
 ```
 
-Where:
-- `α = 0.4` — Learning rate (trust in new data vs. prior belief)
-- `L(observation) = σ(-0.8 · margin)` — Sigmoid likelihood function
-- `margin = distance - stopping_dist - paranoia_buffer`
-- `stopping_dist = v² / (2 · μ · g)` — Physics-based stopping distance
+I set alpha to 0.4 after some experimentation. Higher values made the filter too twitchy. Lower values made it too sluggish to respond to sudden changes.
 
-### Decision Thresholds
+The likelihood comes from a sigmoid function applied to the safety margin:
+
+```
+likelihood = 1 / (1 + exp(0.8 * margin))
+margin = distance_to_truck - stopping_distance - paranoia_buffer
+stopping_distance = v^2 / (2 * mu * g)
+```
+
+When the margin is large and positive, the likelihood drops toward zero. When the margin goes negative, meaning I cannot stop in time, the likelihood spikes toward one. The sigmoid gives me a smooth transition rather than a hard threshold.
+
+I added a paranoia buffer of 4 meters to account for sensor noise, actuator lag, and my own uncertainty about the road surface friction coefficient. In retrospect, I probably should have made this adaptive based on speed, but the fixed value worked well enough for this scenario.
+
+---
+
+## The Control Logic
+
+I split the decision space into three regions based on the posterior risk.
 
 | Risk Level | Threshold | Action |
 |------------|-----------|--------|
@@ -73,180 +67,130 @@ Where:
 | High | 0.60 - 0.85 | Creep Mode (max 2.75 m/s) |
 | Normal | < 0.60 | Cruise Control (target 6.0 m/s) |
 
+Risk above 0.85 triggers an emergency stop. Full brake, zero throttle. This is the oh-no-I-see-the-pedestrian mode.
+
+Risk between 0.60 and 0.85 triggers creep mode. I cap the speed at 2.75 m/s, which gives a stopping distance of about 0.77 meters at mu=0.5. This lets the car make forward progress while staying prepared to stop instantly.
+
+Risk below 0.60 means cruise control. Target speed 6 m/s, gentle throttle.
+
+The gap between 0.60 and 0.85 is intentional. Without it, the controller oscillated rapidly between braking and accelerating near the threshold. The hysteresis band fixed that completely.
+
 ---
 
-## Performance Results
+## What Broke Along the Way
 
-### Phase Analysis
+The first version had a nasty bug in the passing logic. I wanted the car to recognize when it was overtaking the truck versus when it was stuck behind it. My initial heuristic: if distance to truck is less than 5 meters and speed is above 2 m/s, we must be passing it, so ignore the occlusion risk.
 
-| Phase | Speed Mean (m/s) | Speed Std | Risk Mean | Risk Max | Steps |
-|-------|------------------|-----------|-----------|----------|-------|
-| Approach | 2.30 | 2.06 | 0.14 | 0.54 | 28 |
-| Creep (Pre-Detection) | 5.29 | 0.32 | 0.77 | 0.84 | 11 |
-| Emergency Stop | 0.00 | 0.00 | 0.98 | 1.00 | 50 |
-| Recovery/Creep | 3.44 | 1.31 | 0.61 | 0.82 | 134 |
-| Safe Departure | 6.00 | 0.19 | 0.02 | 0.09 | 25 |
+This failed spectacularly. The car would approach the truck, enter creep mode correctly, then suddenly decide it was passing and accelerate directly into the danger zone. The problem was that creep mode itself satisfies speed above 2 m/s. Consequently, the car would creep, trigger passing mode, accelerate, re-enter creep mode, trigger passing mode again, and repeat.
 
-### Key Metrics
+I fixed it by adding a check on the prior risk. Passing mode only activates if prior_risk is below 0.5. If the car is already scared, it stays scared. This one-line fix eliminated the oscillation entirely.
+
+The second major issue was the geometric radar for pedestrian detection. I needed to know if the pedestrian was directly in front of the car, not just nearby. I compute a dot product between the car's forward vector and the normalized vector to the pedestrian. If the dot product exceeds 0.95, roughly plus or minus 18 degrees, I flag the pedestrian as blocking.
+
+Initially I set the threshold at 0.8, which was way too wide. The car would emergency brake when the pedestrian was still off to the side, well before any actual danger. Tightening to 0.95 fixed the false positives.
+
+---
+
+## Results
+
+I logged every timestep to a CSV and ran analysis afterward. The scenario breaks down into five phases.
+
+| Phase | Steps | Speed Mean (m/s) | Speed Std | Risk Mean | Risk Max |
+|-------|-------|------------------|-----------|-----------|----------|
+| Approach | 28 | 2.30 | 2.06 | 0.14 | 0.54 |
+| Creep (Pre-Detection) | 11 | 5.29 | 0.32 | 0.77 | 0.84 |
+| Emergency Stop | 50 | 0.00 | 0.00 | 0.98 | 1.00 |
+| Recovery/Creep | 134 | 3.44 | 1.31 | 0.61 | 0.82 |
+| Safe Departure | 25 | 6.00 | 0.19 | 0.02 | 0.09 |
+
+The approach phase shows the car accelerating from standstill. Creep phase kicks in when risk climbs above 0.60 but the pedestrian is not yet visible—the car is slowing down preemptively based on occlusion risk alone. Emergency stop is exactly what it sounds like. Recovery takes the longest because the risk decays gradually as the car creeps through the danger zone. Safe departure is the return to normal cruise.
 
 | Metric | Value |
 |--------|-------|
 | Total Timesteps | 248 |
 | Speed Variance (Creep Mode) | 1.83 |
 | Speed Variance (Normal Mode) | 0.03 |
-| Stability Ratio | **52.5x more stable** in normal operation |
-| Collisions | **0** |
+| Stability Ratio | 52.5x more stable in normal operation |
+| Collisions | 0 |
+
+Speed variance in creep mode was 1.83. In normal cruise mode it was 0.03. That 52x difference shows the controller is stable when it should be stable and appropriately variable when navigating uncertainty.
+
+Processing latency averaged around 5 milliseconds per loop iteration. Plenty fast for a 20 Hz control loop.
 
 ---
 
-## Analysis Visualizations
+## Visualizations
 
-### Temporal Behavior Analysis
+### Temporal Behavior
 ![Time Series Analysis](figures/time_series_analysis.png)
 
-*Shows the five distinct phases: Approach → Creep → Emergency Stop → Recovery → Safe Departure*
+This plot shows the five phases in sequence. You can see the risk spike at pedestrian detection, the speed drop to zero during emergency stop, and the gradual recovery afterward.
 
 ### Risk Distribution
 ![Risk Distribution](figures/risk_distribution.png)
 
-*Histogram of risk values during operation, showing clear separation between safe and dangerous states*
+The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 1.0 is the emergency stop period.
 
 ### Variable Correlations
 ![Scatter Matrix](figures/scatter_matrix.png)
 
-*Correlation analysis between Distance, Speed, Safety Margin, and Risk*
-
-### System Performance
+### System Latency
 ![Research Metrics](figures/research_metrics.png)
 
-*Processing latency (~5ms average) and cross-track error over simulation time*
+The latency spike at t=0 is initialization overhead. Steady-state latency sits around 5ms.
 
 ---
 
-## Project Structure
+## What I Would Do Differently
+
+The fixed thresholds bother me. I tuned 0.60 and 0.85 by trial and error on this one scenario. They might not generalize. A proper approach would learn these thresholds from data or adapt them online based on the environment.
+
+The pedestrian detection uses ground truth position, which is cheating. In a real system I would need to run this through a perception pipeline with all its associated noise and latency. The Bayesian filter should help with that, but I have not tested it.
+
+I only handle one occluder. Multiple trucks would require tracking multiple risk sources and somehow combining them. Probably a particle filter or separate Bayesian estimates that get fused.
+
+The pedestrian trajectory is not predicted. I react to current position only. Adding a Kalman filter to estimate pedestrian velocity and project forward would let me brake earlier in ambiguous cases.
+
+---
+
+## Files
 
 ```
-├── bayesian_safety_controller.py   # Core Bayesian filter + control logic
-├── deathtrap_with_radar.py         # CARLA scenario runner
-├── metrics_logger.py               # Data collection for analysis
-├── risk_log.csv                    # Output: timestep-by-timestep data
-├── README.md                       # This file
-└── figures/                        # Generated analysis plots
-    ├── time_series_analysis.png
-    ├── risk_distribution.png
-    ├── scatter_matrix.png
-    └── research_metrics.png
+bayesian_safety_controller.py    # Bayesian filter and control logic
+deathtrap_with_radar.py          # CARLA scenario setup and main loop
+metrics_logger.py                # Per-timestep data collection
+risk_log.csv                     # Output data for analysis
+figures/                         # Generated plots
 ```
 
 ---
 
-## Tech Stack
+## Running It
 
-- **Simulator:** CARLA 0.9.15
-- **Language:** Python 3.7+
-- **Libraries:** `carla`, `numpy`, `opencv-python`, `matplotlib`
+Prerequisites: CARLA 0.9.15, Python 3.7+, numpy, opencv-python, matplotlib.
 
----
+```bash
+pip install numpy opencv-python matplotlib
+```
 
-## Installation & Usage
+Start CARLA server on Town 10:
 
-### Prerequisites
+```bash
+./CarlaUE4.sh -quality-level=Low
+```
 
-1. Install CARLA 0.9.15 ([Installation Guide](https://carla.readthedocs.io/en/0.9.15/start_quickstart/))
-2. Install Python dependencies:
-   ```bash
-   pip install numpy opencv-python matplotlib
-   ```
+In a separate terminal:
 
-### Running the Simulation
+```bash
+python deathtrap_with_radar.py
+```
 
-1. Launch CARLA server (Town 10):
-   ```bash
-   ./CarlaUE4.sh -quality-level=Low
-   ```
-
-2. In a separate terminal, run the scenario:
-   ```bash
-   python deathtrap_with_radar.py
-   ```
-
-3. Observe the simulation in the CARLA window and the ego camera feed in OpenCV.
-
-### Output
-
-- **Terminal:** Live time, position, and speed readout
-- **CSV:** `risk_log.csv` with per-timestep data for analysis
-- **Visual:** In-world debug text showing Risk, Status, Stopping Distance, and Safety Margin
-
----
-
-## Design Decisions
-
-### Why Bayesian Filtering?
-Traditional AEB systems use instantaneous sensor readings, which fail catastrophically when a target is briefly occluded. The Bayesian filter maintains a **belief state** that decays gradually, providing a safety buffer during sensor dropouts.
-
-### Passing Mode Logic
-Added `prior_risk < 0.5` check to the passing detection logic. Without this, the car would incorrectly classify "stuck behind truck" as "passing truck" because both have `dist_to_truck < 5m`. The prior risk check ensures we only activate passing mode when we're genuinely confident, not when we're already scared.
-
-### Creep Speed Cap (2.75 m/s)
-Empirically tuned to balance:
-- **Forward progress:** Allows the vehicle to clear the danger zone
-- **Stopping capability:** At 2.75 m/s with μ=0.5, stopping distance ≈ 0.77m
-- **Reaction time:** Gives ~5m of visibility at 15m detection range
-
-### Hysteresis Gap (0.60 – 0.85)
-The gap between "start creeping" (0.60) and "emergency stop" (0.85) prevents oscillation. Without this, the controller would rapidly alternate between braking and accelerating near the threshold.
-
-### Paranoia Buffer (4.0m)
-Added to stopping distance calculations as a safety margin for:
-- Sensor noise and latency
-- Actuator response time
-- Road surface uncertainty
-
----
-
-## Current Limitations
-
-- **Lateral Logic:** The system uses a velocity-based heuristic to distinguish between "tailgating" and "passing." Future iterations will implement geometric raycasting for robust lateral state estimation.
-
-- **Single Occluder:** Currently optimized for one occluding vehicle. Multi-occluder scenarios would require tracking multiple risk sources.
-
-- **Fixed Thresholds:** Risk thresholds are manually tuned. Adaptive threshold learning could improve generalization.
-
-- **No Prediction:** The pedestrian trajectory is not predicted—only current position is used. Adding a Kalman filter for pedestrian motion prediction would improve anticipation.
-
----
-
-## Future Work
-
-1. **Multi-Object Tracking:** Extend Bayesian filter to track multiple occluders and pedestrians
-2. **Learned Thresholds:** Use reinforcement learning to adapt risk thresholds to different scenarios
-3. **Trajectory Prediction:** Integrate pedestrian motion prediction for earlier intervention
-4. **Real Sensor Integration:** Replace ground-truth positions with LiDAR/camera perception pipeline
+The simulation ends automatically when the car reaches x=-95. Terminal shows live time, position, and speed. The CARLA window shows an overhead view with debug text floating above the car indicating risk level and control state.
 
 ---
 
 ## References
 
-This project is an implementation and adaptation of the methods proposed in:
+Wang, H., et al. (2025). Safe Driving in Occluded Environments. arXiv:2510.13114.
 
-- **Wang, H., et al. (2025).** "Safe Driving in Occluded Environments" — arXiv preprint arXiv:2510.13114
-
-**Specific Adaptations:**
-- Adapted "Algorithm 3" (Risk Belief Update) with sigmoid likelihood function
-- Added kinematic constraints (stopping distance physics)
-- Implemented hysteresis controller to stabilize behavior within CARLA physics engine
-- Added "Creep Mode" for cautious navigation through high-risk zones
-
----
-
-## License
-
-This project is for research and educational purposes.
-
----
-
-## Acknowledgments
-
-- CARLA Simulator team for the open-source autonomous driving platform
-- Wang et al. for the theoretical foundation on occlusion-aware safety control
+I adapted their Algorithm 3 for risk belief updates, added kinematic stopping distance calculations, and implemented the hysteresis controller to prevent oscillation in the CARLA physics engine.
