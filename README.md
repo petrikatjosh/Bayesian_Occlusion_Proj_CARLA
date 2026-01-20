@@ -122,7 +122,7 @@ Processing latency averaged around 5 milliseconds per loop iteration. Plenty fas
 ## Visualizations
 
 ### Temporal Behavior
-img width="1400" height="1200" alt="timeseriesanalysis" src="https://github.com/user-attachments/assets/5982b866-5115-448f-9d8f-9e419f62dc6e" />
+<img width="1400" height="1200" alt="timeseriesanalysis" src="https://github.com/user-attachments/assets/5982b866-5115-448f-9d8f-9e419f62dc6e" />
 
 
 This plot shows the five phases in sequence. You can see the risk spike at pedestrian detection, the speed drop to zero during emergency stop, and the gradual recovery afterward. 
