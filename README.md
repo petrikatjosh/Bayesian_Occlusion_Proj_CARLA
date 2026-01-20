@@ -1,4 +1,4 @@
-<img width="1000" height="800" alt="system_latency_and_CTE" src="https://github.com/user-attachments/assets/1840a969-4bdd-46b7-9707-4568481bd320" /># Bayesian Safety Controller for CARLA
+# Bayesian Safety Controller for CARLA
 
 I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a Recursive Bayesian Filter that maintains a belief state over time, decaying gradually rather than snapping to zero.
 
