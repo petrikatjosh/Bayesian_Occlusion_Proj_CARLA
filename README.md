@@ -131,7 +131,7 @@ This plot shows the five phases in sequence. You can see the risk spike at pedes
 <img width="1000" height="500" alt="riskdistribution" src="https://github.com/user-attachments/assets/fe5a8ddb-3d9a-424e-81f3-edecdbe0d602" />
 
 
-The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 0.8 represents the car's creep speed beside the truck in response to the potential occlusion threat.
+The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 0.8 represents the car's creep mode beside the truck in response to the potential threats hidden by occlusion (i.e. jaywalker)
 ### Variable Correlations
 <img width="1200" height="1200" alt="variablecorrelations" src="https://github.com/user-attachments/assets/b38cdb0b-a6ff-4538-893e-199948acd106" />
 
