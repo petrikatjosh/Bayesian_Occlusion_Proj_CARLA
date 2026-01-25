@@ -145,7 +145,7 @@ The latency spike at t=0 is initialization overhead. Steady-state latency sits a
 
 ---
 
-## What I Would Do Differently
+## Future Work/Limitations/What I Would Do Differently
 
 The fixed thresholds bother me. I tuned 0.60 and 0.85 by trial and error on this one scenario. They might not generalize. A proper approach would learn these thresholds from data or adapt them online based on the environment.
 
@@ -160,6 +160,7 @@ Latency was not used in the stopping distance formula; the formula assumes insta
 Different levels of tire friction are also not considered here; future work should include different environments that result in different levels of tire friction.
 
 Since this controller relies on a heurisitc override by making the distance between the truck and ego vehicle much higher for the vehicle to pass, the car is essential in a dangerous 'zombie state' that will not react immediately if the truck were to swerve into the ego vehicle's lane.
+
 ---
 
 ## Project Structure
