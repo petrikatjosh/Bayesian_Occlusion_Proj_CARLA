@@ -157,6 +157,8 @@ The pedestrian trajectory is not predicted. I react to current position only. Ad
 
 Latency was not used in the stopping distance formula; the formula assumes instant reaction. Latency should be factored into the safety margin calculation.
 
+Different levels of tire friction are also not considered here; future work should include different environments that result in different levels of tire friction.
+
 ---
 
 ## Project Structure
