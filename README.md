@@ -155,6 +155,8 @@ I only handle one occluder. Multiple trucks would require tracking multiple risk
 
 The pedestrian trajectory is not predicted. I react to current position only. Adding a Kalman filter to estimate pedestrian velocity and project forward would let me brake earlier in ambiguous cases.
 
+Latency was not used in the stopping distance formula; the formula assumes instant reaction. Latency should be factored into the safety margin calculation.
+
 ---
 
 ## Project Structure
