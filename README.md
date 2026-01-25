@@ -159,6 +159,7 @@ Latency was not used in the stopping distance formula; the formula assumes insta
 
 Different levels of tire friction are also not considered here; future work should include different environments that result in different levels of tire friction.
 
+Since this controller relies on a heurisitc override by making the distance between the truck and ego vehicle much higher for the vehicle to pass, the car is essential in a dangerous 'zombie state' that will not react immediately if the truck were to swerve into the ego vehicle's lane.
 ---
 
 ## Project Structure
