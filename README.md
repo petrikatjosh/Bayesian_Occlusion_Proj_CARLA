@@ -145,7 +145,7 @@ The latency spike at t=0 is initialization overhead. Steady-state latency sits a
 
 ---
 
-## Future Work/Limitations/What I Would Do Differently
+## Limitations and Future Work
 
 ### Static Risk Thresholds
 
