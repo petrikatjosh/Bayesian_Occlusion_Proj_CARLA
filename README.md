@@ -147,19 +147,32 @@ The latency spike at t=0 is initialization overhead. Steady-state latency sits a
 
 ## Future Work/Limitations/What I Would Do Differently
 
-The fixed thresholds bother me. I tuned 0.60 and 0.85 by trial and error on this one scenario. They might not generalize. A proper approach would learn these thresholds from data or adapt them online based on the environment.
+### Static Risk Thresholds
 
-This controller relies on a heurisitc override by arbitrarily making the logged distance between the truck and ego vehicle much higher if particular conditions are met (if d_occ < 5.0 and speed > 2.0 and self.prior_risk < 0.5), so the vehicle can pass the truck. Therefore, the car is essentially in a dangerous 'zombie state' that will not react immediately if the truck were to swerve into the ego vehicle's lane.
+The current risk thresholds, 0.60 for creep and 0.85 for emergency stop, were empirically tuned for this specific occlusion scenario. I arrived at these values through trial and error on the Deathtrap test. They work here. They might not generalize. A proper approach would learn these thresholds from large-scale driving data or adapt them online based on environmental context such as weather, road type, or traffic density.
 
-The pedestrian detection uses ground truth position, which is cheating. In a real system I would need to run this through a perception pipeline with all its associated noise and latency. The Bayesian filter should help with that, but I have not tested it.
+### Heuristic Passing Logic and Lateral Vulnerability
 
-I only handle one occluder. Multiple trucks would require tracking multiple risk sources and somehow combining them. Probably a particle filter or separate Bayesian estimates that get fused.
+To facilitate overtaking without triggering false-positive braking, the controller uses a heuristic override that forces effective_distance to 50 meters when specific speed and proximity conditions are met. This creates a limitation in the current Operational Design Domain. During the passing maneuver, the vehicle enters a temporary blind spot regarding lateral proximity. It assumes the occluder will maintain its lane. A fully robust solution would replace this heuristic with a lateral Time-to-Collision metric to handle sudden cut-ins during overtaking.
 
-The pedestrian trajectory is not predicted. I react to current position only. Adding a Kalman filter to estimate pedestrian velocity and project forward would let me brake earlier in ambiguous cases.
+### Idealized Perception Input
 
-Latency was not used in the stopping distance formula; the formula assumes instant reaction. Latency should be factored into the safety margin calculation.
+This implementation uses simulation ground truth for pedestrian positioning. I intentionally bypassed a realistic perception pipeline to isolate the performance of the Bayesian control logic and avoid confounding perception noise with control errors. A real-world deployment would require integrating a noisy perception stack, which would necessitate either a more aggressive Bayesian update by tuning alpha higher or a Particle Filter to handle position uncertainty explicitly.
 
-Different levels of tire friction are also not considered here; future work should include different environments that result in different levels of tire friction.
+### Latency Integration
+While the system logs computation latency at approximately 5ms, the current stopping distance formula assumes idealized, instantaneous actuation. Future iterations should explicitly factor this latency into the safety margin calculation as d_reaction = v * t_latency to prevent overestimating the available braking distance at higher speeds. At 6 m/s with 5ms latency, this adds only 0.03 meters, but the principle matters for faster vehicles.
+
+### Single-Source Occlusion Tracking
+
+The current Bayesian filter tracks a single risk source. Scaling to complex urban environments would require multi-agent tracking, likely necessitating a fusion approach where multiple Bayesian estimates or a grid-based occupancy filter are combined to handle multiple simultaneous occlusion zones.
+
+### Reactive vs. Predictive Pedestrian Handling
+
+The system currently reacts to the pedestrian's instantaneous state. It does not project the pedestrian's path forward in time. Implementing a Kalman Filter to estimate pedestrian velocity and predict future intersection points would allow the vehicle to brake earlier in ambiguous cases, shifting the behavior from reactive to proactive.
+
+### Environmental Generalization
+
+The friction coefficient mu is currently hardcoded at 0.5. Future work would involve integrating a friction observer to adapt the braking distance calculations for varying road conditions such as rain, snow, or different asphalt types.
 
 ---
 
