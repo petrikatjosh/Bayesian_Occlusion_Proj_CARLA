@@ -149,6 +149,8 @@ The latency spike at t=0 is initialization overhead. Steady-state latency sits a
 
 The fixed thresholds bother me. I tuned 0.60 and 0.85 by trial and error on this one scenario. They might not generalize. A proper approach would learn these thresholds from data or adapt them online based on the environment.
 
+This controller relies on a heurisitc override by arbitrarily making the logged distance between the truck and ego vehicle much higher if particular conditions are met (if d_occ < 5.0 and speed > 2.0 and self.prior_risk < 0.5), so the vehicle can pass the truck. Therefore, the car is essentially in a dangerous 'zombie state' that will not react immediately if the truck were to swerve into the ego vehicle's lane.
+
 The pedestrian detection uses ground truth position, which is cheating. In a real system I would need to run this through a perception pipeline with all its associated noise and latency. The Bayesian filter should help with that, but I have not tested it.
 
 I only handle one occluder. Multiple trucks would require tracking multiple risk sources and somehow combining them. Probably a particle filter or separate Bayesian estimates that get fused.
@@ -158,8 +160,6 @@ The pedestrian trajectory is not predicted. I react to current position only. Ad
 Latency was not used in the stopping distance formula; the formula assumes instant reaction. Latency should be factored into the safety margin calculation.
 
 Different levels of tire friction are also not considered here; future work should include different environments that result in different levels of tire friction.
-
-Since this controller relies on a heurisitc override by making the distance between the truck and ego vehicle much higher for the vehicle to pass, the car is essential in a dangerous 'zombie state' that will not react immediately if the truck were to swerve into the ego vehicle's lane.
 
 ---
 
