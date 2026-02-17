@@ -85,6 +85,9 @@ def main():
         print("Starting Simulation with CONTROLLER...")
 
         logger = ResearchLogger()
+
+        # --- TIMER SETUP ---
+        sim_start_time = time.time() 
         
         while True:
             loop_start = time.time() # <--- 1. START CLOCK
@@ -180,6 +183,14 @@ def main():
                 cv2.waitKey(1)
 
             logger.log_step(ego_vehicle, map, loop_start) # <--- 2. LOG DATA
+
+            # --- LIVE TIMER DISPLAY ---                                                      
+            elapsed_time = time.time() - sim_start_time                                       
+            # Get current speed for display                                                   
+            vel = ego_vehicle.get_velocity()                                                  
+            current_speed = math.sqrt(vel.x**2 + vel.y**2)                                    
+            # Print on same line using \r (carriage return)                                   
+            print(f"\rTime: {elapsed_time:6.2f}s | Pos X: {ego_loc.x:7.2f} | Speed: {current_speed:4.2f} m/s", end="", flush=True)  
 
             # --- AUTO-END CONDITION ---
             # End scenario when ego vehicle passes x=-95 (well past the intersection at x=-66)
