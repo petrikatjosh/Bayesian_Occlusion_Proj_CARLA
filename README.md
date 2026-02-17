@@ -2,7 +2,7 @@
 
 I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a Recursive Bayesian Filter that maintains a belief state over time, decaying gradually rather than snapping to zero.
 
-Demo: https://youtu.be/UJPgLf01mFs
+Demo Video: https://youtu.be/VopOavB_F6M
 
 ---
 
