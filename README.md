@@ -221,6 +221,6 @@ The simulation ends automatically when the car reaches x=-95. Terminal shows liv
 
 ## References
 
-Wang, H., et al. (2025). Safe Driving in Occluded Environments. arXiv:2510.13114.
+Wang et al. (2025). Safe Driving in Occluded Environments. arXiv:2510.13114.
 
 I adapted their Algorithm 3 for risk belief updates, added kinematic stopping distance calculations, and implemented the hysteresis controller to prevent oscillation in the CARLA physics engine.
