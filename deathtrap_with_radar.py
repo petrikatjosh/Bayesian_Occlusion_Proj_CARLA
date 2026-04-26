@@ -7,7 +7,7 @@ import cv2
 import queue
 
 # from updated_safety_controller import SniperController
-from bayesian_safety_controller import SniperController
+from risk_safety_controller import SniperController
 from metrics_logger import ResearchLogger
 
 
