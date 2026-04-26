@@ -22,18 +22,23 @@ import carla
 
 class SniperController:
     """
-    Implements the "Modified Algorithm 3" from Wang et al. (2025).
-    Replaces static Monte Carlo tables with a Recursive Bayesian Filter.
+    Recursive risk estimator for occlusion-aware speed control.
+    
+    Uses an exponential moving average with a sigmoid-shaped likelihood
+    to maintain a continuous risk belief over time. Inspired by the goal
+    of Wang et al. (2025) to maintain safety probability estimates across
+    timesteps, but uses a lightweight heuristic rather than their formal
+    probabilistic invariance framework.
     """
     def __init__(self, ego_vehicle):
         self.vehicle = ego_vehicle
 
-        # --- BAYESIAN FILTER STATE ---
-        self.prior_risk = 0.1  # P(x_k-1): Initial belief
+        # --- RISK ESTIMATOR STATE ---
+        self.prior_risk = 0.1  # Initial risk estimate
         # self.alpha = 0.2       # Learning Rate: How much we trust new data vs old belief
         # increased alpha (0.2 -> 0.4) so it learns faster
         self.alpha = 0.4
-        self.risk_threshold = 0.6 # The "Safety Certificate" limit (1 - epsilon)
+        self.risk_threshold = 0.6 # Threshold for triggering cautious behavior
 
         # --- LOGGING SETUP ---
         # Opens a file named 'risk_log.csv' in the same folder
@@ -44,9 +49,9 @@ class SniperController:
 
     def get_control_action(self, dist_to_int, dist_to_occluder, is_pedestrian_visible):
         """
-        THIS IS ALGORITHM 3 (The Control Loop)
+        Main control loop.
         1. Measure State
-        2. Update Bayesian Belief (Risk Estimation)
+        2. Update Risk Estimate
         3. Apply Safety Constraints
         """
 
@@ -81,18 +86,8 @@ class SniperController:
         v = self.vehicle.get_velocity()
         speed_ms = np.sqrt(v.x**2 + v.y**2)
 
-        # 2. Estimate Risk (The "Bayesian" Upgrade)
-        # This replaces the old "heuristic" function
-        current_risk = self._update_bayesian_belief(speed_ms, dist_to_occluder)
-
-        # # 3. Decision Logic (The Safety Certificate)
-        # control = carla.VehicleControl()
-
-        # # If Risk > Threshold, we must intervene (Algorithm 3, Line 10)
-        # if current_risk > self.risk_threshold:
-        #     print(f"*** RISK HIGH ({current_risk:.2f}) -> BRAKING ***")
-        #     control.throttle = 0.0
-        #     control.brake = 1.0  # Emergency Stop
+        # 2. Estimate Risk (Recursive Risk Update)
+        current_risk = self._update_risk_estimate(speed_ms, dist_to_occluder)
 
         # 3. Decision Logic
         if current_risk > self.risk_threshold:
@@ -137,9 +132,9 @@ class SniperController:
 
         return control
 
-    # Updated bayesian belief function
+    # Recursive risk update
 
-    def _update_bayesian_belief(self, speed, d_occ):
+    def _update_risk_estimate(self, speed, d_occ):
         # --- 1. INPUT CORRECTION (With Panic Check) ---
         effective_distance = d_occ 
 
@@ -164,9 +159,9 @@ class SniperController:
              self.debug_stopping_dist = safe_stopping_dist
              self.debug_margin = safety_margin
 
-        # ... (Keep the rest of your Bayesian logic below) ...
+        # ... (Keep the rest of the risk estimation logic below) ...
 
-        # --- 3. BAYESIAN UPDATE (Runs Normally!) ---
+        # --- 3. RISK UPDATE (Exponential Moving Average) ---
         # Sigmoid Function
         # Since margin is huge (when passing), likelihood drops to ~0.0 naturally.
         current_likelihood = 1.0 / (1.0 + np.exp(0.8 * safety_margin))
