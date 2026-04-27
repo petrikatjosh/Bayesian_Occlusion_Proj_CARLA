@@ -1,6 +1,8 @@
-# Bayesian Safety Controller for CARLA
+# Recursive Risk Estimator for Occlusion-Aware Autonomous Driving in CARLA
 
-I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a Recursive Bayesian Filter that maintains a belief state over time, decaying gradually rather than snapping to zero.
+I built a probabilistic safety controller that handles sensor occlusion in autonomous driving scenarios. The core problem: deterministic AEB systems fail catastrophically when a pedestrian is hidden behind a truck because they rely on instantaneous sensor readings. The moment the pedestrian disappears from the sensor, the car assumes the coast is clear and accelerates. I replaced that logic with a recursive risk estimator that maintains a continuous risk belief over time, decaying gradually rather than snapping to zero.
+
+**Methodological note:** The risk estimator uses an exponential moving average with a sigmoid-shaped likelihood function — a lightweight heuristic inspired by Bayesian filtering, not a full Bayesian posterior update over a probability distribution. This design choice prioritized real-time simplicity for a proof-of-concept. Extending this to a formally grounded probabilistic framework (e.g., particle filters, or probabilistic safety certificates as in [Wang et al., 2025](https://arxiv.org/abs/2510.13114)) is a primary direction for future work.
 
 Demo Video: https://youtu.be/VopOavB_F6M
 
@@ -16,7 +18,7 @@ I wanted to build a controller that could reason about what it cannot see. Speci
 
 ## The Scenario
 
-I set up a worst-case test in CARLA called the Deathtrap. A Tesla Model 3 drives at 6 m/s toward an intersection. A delivery truck in the adjacent lane blocks the view of a pedestrian who is about to cross. The pedestrian starts at y=21, walking toward y=35 at 2.1 m/s. The intersection is at x=-66. The car starts at x=-47.
+I set up a worst-case test in CARLA called the Occluded Intersection Scenario. A Tesla Model 3 drives at 6 m/s toward an intersection. A delivery truck in the adjacent lane blocks the view of a pedestrian who is about to cross. The pedestrian starts at y=21, walking toward y=35 at 2.1 m/s. The intersection is at x=-66. The car starts at x=-47.
 
 | Actor | Start Position | Behavior |
 |-------|---------------|----------|
@@ -31,9 +33,9 @@ I ran this scenario repeatedly and achieved zero collisions across all test runs
 
 ---
 
-## How the Bayesian Filter Works
+## How the Risk Estimator Works
 
-The filter maintains a prior risk value that updates every timestep. I compute a likelihood based on the current safety margin, then blend it with the prior using a learning rate alpha.
+The estimator maintains a scalar risk belief that updates every timestep. I compute a likelihood based on the current safety margin, then blend it with the prior using a learning rate alpha. This is an exponential moving average, not a Bayesian posterior update — there is no explicit prior distribution, no normalization, and no latent state being inferred. The sigmoid likelihood and temporal smoothing produce behavior that resembles belief tracking, but the mathematical foundation is closer to a leaky integrator with a nonlinear input.
 
 The update rule:
 
@@ -145,42 +147,34 @@ The latency spike at t=0 is initialization overhead. Steady-state latency sits a
 
 ---
 
-## Limitations and Future Work
+## Limitations and Research Directions
 
-### Static Risk Thresholds
+The limitations below motivated my interest in formally grounded probabilistic safety frameworks — particularly probabilistic invariance methods that provide long-term safety guarantees without the over-conservatism of worst-case approaches.
 
-The current risk thresholds, 0.60 for creep and 0.85 for emergency stop, were empirically tuned for this specific occlusion scenario. I arrived at these values through trial and error on the Deathtrap test. They work here. They might not generalize. A proper approach would learn these thresholds from large-scale driving data or adapt them online based on environmental context such as weather, road type, or traffic density.
+### From Heuristic Risk Tracking to Formal Safety Certificates
 
-### Heuristic Passing Logic and Lateral Vulnerability
+The core limitation: the current risk estimator is a heuristic with empirically tuned thresholds (0.60 for creep, 0.85 for emergency stop). These values were found through trial and error on the Occluded Intersection Scenario test. They work here. They might not generalize. More fundamentally, the exponential moving average update provides no formal guarantee that long-term collision probability stays below a desired tolerance. Replacing this with a proper probabilistic safety certificate — where linear constraints on control actions confine latent risk probability within a provable bound — is the most important extension of this work.
 
-To facilitate overtaking without triggering false-positive braking, the controller uses a heuristic override that forces effective_distance to 50 meters when specific speed and proximity conditions are met. This creates a limitation in the current Operational Design Domain. During the passing maneuver, the vehicle enters a temporary blind spot regarding lateral proximity. It assumes the occluder will maintain its lane. A fully robust solution would replace this heuristic with a lateral Time-to-Collision metric to handle sudden cut-ins during overtaking.
+### From Scalar Risk to Distributional Prediction
 
-### Idealized Perception Input
+The estimator tracks a single scalar. A more principled approach would maintain a full probability distribution over possible hidden-agent states and future trajectories. I plan to explore diffusion-based trajectory prediction to generate diverse plausible futures across multiple scenarios, producing calibrated probability distributions that could feed into a formal safety framework rather than a hand-tuned sigmoid.
 
-This implementation uses simulation ground truth for pedestrian positioning. I intentionally bypassed a realistic perception pipeline to isolate the performance of the Bayesian control logic and avoid confounding perception noise with control errors. A real-world deployment would require integrating a noisy perception stack, which would necessitate either a more aggressive Bayesian update by tuning alpha higher or a Particle Filter to handle position uncertainty explicitly.
+### Additional Practical Limitations
 
-### Latency Integration
-While the system logs computation latency at approximately 5ms, the current stopping distance formula assumes idealized, instantaneous actuation. Future iterations should explicitly factor this latency into the safety margin calculation as d_reaction = v * t_latency to prevent overestimating the available braking distance at higher speeds. At 6 m/s with 5ms latency, this adds only 0.03 meters, but the principle matters for faster vehicles.
-
-### Single-Source Occlusion Tracking
-
-The current Bayesian filter tracks a single risk source. Scaling to complex urban environments would require multi-agent tracking, likely necessitating a fusion approach where multiple Bayesian estimates or a grid-based occupancy filter are combined to handle multiple simultaneous occlusion zones.
-
-### Reactive vs. Predictive Pedestrian Handling
-
-The system currently reacts to the pedestrian's instantaneous state. It does not project the pedestrian's path forward in time. Implementing a Kalman Filter to estimate pedestrian velocity and predict future intersection points would allow the vehicle to brake earlier in ambiguous cases, shifting the behavior from reactive to proactive.
-
-### Environmental Generalization
-
-The friction coefficient mu is currently hardcoded at 0.5. Future work would involve integrating a friction observer to adapt the braking distance calculations for varying road conditions such as rain, snow, or different asphalt types.
+- **Idealized perception:** Uses simulation ground truth for pedestrian positioning. I intentionally bypassed a noisy perception pipeline to isolate control logic performance. A real deployment would require a particle filter or similar to handle position uncertainty.
+- **Latency Integration** While the system logs computation latency at approximately 5ms, the current stopping distance formula assumes idealized, instantaneous actuation. Future iterations should explicitly factor this latency into the safety margin calculation as d_reaction = v * t_latency to prevent overestimating the available braking distance at higher speeds. At 6 m/s with 5ms latency, this adds only 0.03 meters, but the principle matters for faster vehicles.
+- **Single-source occlusion:** The estimator tracks one risk source. Scaling to complex urban environments requires multi-agent tracking via grid-based occupancy filtering.
+- **Reactive pedestrian handling:** No trajectory prediction — the system reacts to instantaneous state rather than projecting future intersection points.
+- **Heuristic passing logic:** The overtaking override assumes the occluder maintains its lane. A lateral TTC metric would be more robust.
+- **Hardcoded friction (μ=0.5):** A friction observer would adapt braking distance for varying road conditions.
 
 ---
 
 ## Project Structure
 
 ```
-├── bayesian_safety_controller.py   # Core Bayesian filter + control logic
-├── deathtrap_with_radar.py         # CARLA scenario runner
+├── risk_safety_controller.py       # Core risk estimator + control logic
+├── occluded_intersection.py        # CARLA scenario runner (occluded intersection)
 ├── metrics_logger.py               # Data collection for analysis
 ├── risk_log.csv                    # Output: timestep-by-timestep data
 ├── README.md                       # This file
@@ -212,7 +206,7 @@ Start CARLA server on Town 10:
 In a separate terminal:
 
 ```bash
-python deathtrap_with_radar.py
+python occluded_intersection.py
 ```
 
 The simulation ends automatically when the car reaches x=-95. Terminal shows live time, position, and speed. The CARLA window shows an overhead view with debug text floating above the car indicating risk level and control state.
@@ -223,4 +217,4 @@ The simulation ends automatically when the car reaches x=-95. Terminal shows liv
 
 Wang et al. (2025). Safe Driving in Occluded Environments. arXiv:2510.13114.
 
-I adapted their Algorithm 3 for risk belief updates, added kinematic stopping distance calculations, and implemented the hysteresis controller to prevent oscillation in the CARLA physics engine.
+The risk estimation approach in this project was motivated by their goal of maintaining a continuous safety probability estimate across timesteps — specifically, the idea that a controller should not treat occlusion as binary (safe/unsafe) but should track a persistent risk quantity that informs control decisions over time. The key difference is that my implementation uses a heuristic exponential moving average with a closed-form braking distance formula, rather than the formal probabilistic invariance framework and Monte Carlo risk estimation they develop. Extending this work to incorporate their safety certificate formulation is a primary research direction.
