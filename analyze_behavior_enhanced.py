@@ -2,6 +2,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.plotting import scatter_matrix
 import numpy as np
+import sys
+from datetime import datetime
+from pathlib import Path
+
+class _Tee:
+    def __init__(self, *streams): self.streams = streams
+    def write(self, s):
+        for st in self.streams: st.write(s)
+    def flush(self):
+        for st in self.streams: st.flush()
 
 # =============================================================================
 # 1. LOAD DATA
@@ -12,7 +22,12 @@ except FileNotFoundError:
     print("Error: 'risk_log.csv' not found. Make sure it is in the same folder.")
     exit()
 
+OUTPUT_DIR = Path('results') / f'run_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}'
+OUTPUT_DIR.mkdir(parents=True, exist_ok=False)
+sys.stdout = _Tee(sys.__stdout__, open(OUTPUT_DIR / 'analysis_log.txt', 'w', encoding='utf-8'))
+
 print(f"Loaded {len(df)} timesteps from risk_log.csv")
+print(f"Output folder: {OUTPUT_DIR}")
 
 # =============================================================================
 # 2. DETECT CRITICAL EVENTS (For Annotations)
@@ -128,8 +143,8 @@ for step, label, color in event_lines:
                      rotation=0)
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.96])
-plt.savefig('time_series_analysis.png', dpi=150)
-print("\nSaved: time_series_analysis.png")
+plt.savefig(OUTPUT_DIR / 'time_series_analysis.png', dpi=150)
+print(f"\nSaved: {OUTPUT_DIR / 'time_series_analysis.png'}")
 
 # =============================================================================
 # 5. SCATTER MATRIX (Your Original Plot, Kept for Comparison)
@@ -141,8 +156,8 @@ fig2, axs = plt.subplots(figsize=(12, 12))
 scatter_matrix(df[columns_to_plot], alpha=0.5, figsize=(12, 12), diagonal='kde')
 plt.suptitle("Scenario Analysis: Variable Correlations", fontsize=16)
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.savefig('scatter_matrix.png', dpi=150)
-print("Saved: scatter_matrix.png")
+plt.savefig(OUTPUT_DIR / 'scatter_matrix.png', dpi=150)
+print(f"Saved: {OUTPUT_DIR / 'scatter_matrix.png'}")
 
 # =============================================================================
 # 6. PHASE ANALYSIS (Research Insight: Variance by Phase)
@@ -216,8 +231,92 @@ ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=10,
         verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
 plt.tight_layout()
-plt.savefig('risk_distribution.png', dpi=150)
-print("\nSaved: risk_distribution.png")
+plt.savefig(OUTPUT_DIR / 'risk_distribution.png', dpi=150)
+print(f"\nSaved: {OUTPUT_DIR / 'risk_distribution.png'}")
+
+# =============================================================================
+# 8. PHASE-COLORED SCATTER MATRIX (Risk < 1.0)
+# =============================================================================
+
+vars_sm = ['Dist_to_Truck', 'Speed', 'Safety_Margin', 'Risk']
+df_sm = df[df['Risk'] < 1.0].copy()
+
+phase_colors = {
+    'Approach':              '#2E86AB',
+    'Creep (Pre-Detection)': '#F18F01',
+    'Emergency Stop':        '#C73E1D',
+    'Recovery/Creep':        '#A23B72',
+    'Safe Departure':        '#6B4E71',
+}
+
+fig4, axes_sm = plt.subplots(len(vars_sm), len(vars_sm), figsize=(12, 12))
+fig4.suptitle('Phase-Colored Scatter Matrix (Risk < 1.0)', fontsize=14, fontweight='bold')
+
+for i, yv in enumerate(vars_sm):
+    for j, xv in enumerate(vars_sm):
+        ax = axes_sm[i, j]
+        if i == j:
+            for phase, color in phase_colors.items():
+                vals = df_sm[df_sm['Phase'] == phase][xv]
+                if len(vals) > 1:
+                    ax.hist(vals, bins=20, color=color, alpha=0.5)
+        else:
+            for phase, color in phase_colors.items():
+                sub = df_sm[df_sm['Phase'] == phase]
+                ax.scatter(sub[xv], sub[yv], c=color, alpha=0.5, s=10)
+        if i == len(vars_sm) - 1:
+            ax.set_xlabel(xv, fontsize=9)
+        else:
+            ax.set_xticklabels([])
+        if j == 0:
+            ax.set_ylabel(yv, fontsize=9)
+        else:
+            ax.set_yticklabels([])
+        ax.tick_params(axis='both', labelsize=7)
+
+handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=c,
+                      markersize=8, label=p) for p, c in phase_colors.items()]
+fig4.legend(handles=handles, loc='upper right', fontsize=9, bbox_to_anchor=(0.99, 0.97))
+
+plt.tight_layout(rect=[0, 0, 1, 0.96])
+plt.savefig(OUTPUT_DIR / 'scatter_matrix_phased.png', dpi=150)
+print(f"Saved: {OUTPUT_DIR / 'scatter_matrix_phased.png'}")
+
+# =============================================================================
+# 9. CORRELATION HEATMAP + FOCUSED SCATTER
+# =============================================================================
+
+fig5, (axh, axsc) = plt.subplots(1, 2, figsize=(14, 6))
+
+corr = df_sm[vars_sm].corr()
+im = axh.imshow(corr.values, cmap='RdBu_r', vmin=-1, vmax=1)
+axh.set_xticks(range(len(vars_sm)))
+axh.set_yticks(range(len(vars_sm)))
+axh.set_xticklabels(vars_sm, rotation=30, ha='right')
+axh.set_yticklabels(vars_sm)
+axh.set_title('Pearson Correlation (Risk < 1.0)', fontsize=12)
+for i in range(len(vars_sm)):
+    for j in range(len(vars_sm)):
+        v = corr.values[i, j]
+        axh.text(j, i, f'{v:.2f}', ha='center', va='center',
+                 color='white' if abs(v) > 0.5 else 'black', fontsize=10)
+fig5.colorbar(im, ax=axh, fraction=0.046, pad=0.04)
+
+sc = axsc.scatter(df_sm['Safety_Margin'], df_sm['Risk'], c=df_sm['Speed'],
+                  cmap='viridis', alpha=0.6, s=15)
+axsc.axvline(x=0, color='red', linestyle='-', alpha=0.5, linewidth=1.5)
+axsc.axhline(y=0.6, color='orange', linestyle='--', alpha=0.7, label='Creep Threshold')
+axsc.axhline(y=0.85, color='red', linestyle='--', alpha=0.7, label='Emergency Threshold')
+axsc.set_xlabel('Safety Margin (m)', fontsize=11)
+axsc.set_ylabel('Risk', fontsize=11)
+axsc.set_title('Safety Margin vs Risk  (color = Speed)', fontsize=12)
+axsc.legend(loc='upper right', fontsize=9)
+axsc.grid(True, alpha=0.3)
+fig5.colorbar(sc, ax=axsc, label='Speed (m/s)', fraction=0.046, pad=0.04)
+
+plt.tight_layout()
+plt.savefig(OUTPUT_DIR / 'risk_correlations.png', dpi=150)
+print(f"Saved: {OUTPUT_DIR / 'risk_correlations.png'}")
 
 plt.show()
 print("\nAnalysis complete.")
