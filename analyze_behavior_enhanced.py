@@ -221,18 +221,22 @@ ax.axvline(x=0.85, color='red', linestyle='--', linewidth=2, label='Emergency Th
 ax.set_xlabel('Risk Value', fontsize=12)
 ax.set_ylabel('Frequency (Timesteps)', fontsize=12)
 ax.set_title('Risk Distribution During Operation (Excluding Emergency Stop Plateau)', fontsize=12)
-ax.legend()
+ax.legend(loc='upper left', framealpha=0.9)
 ax.grid(True, alpha=0.3)
 
-# Add percentage annotations
+# Give the percentage box headroom so it sits clearly below the legend
+ymax = ax.get_ylim()[1]
+ax.set_ylim(top=ymax * 1.15)
+
+# Add percentage annotations (placed below the legend on the left)
 total_steps = len(risk_operational)
 below_creep = len(risk_operational[risk_operational < 0.6]) / total_steps * 100
 in_creep = len(risk_operational[(risk_operational >= 0.6) & (risk_operational < 0.85)]) / total_steps * 100
 in_emergency = len(risk_operational[risk_operational >= 0.85]) / total_steps * 100
 
 textstr = f'Below 0.6: {below_creep:.1f}%\nCreep Zone: {in_creep:.1f}%\nEmergency: {in_emergency:.1f}%'
-ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=10,
-        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+ax.text(0.02, 0.70, textstr, transform=ax.transAxes, fontsize=10,
+        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.85))
 
 plt.tight_layout()
 plt.savefig(OUTPUT_DIR / 'risk_distribution.png', dpi=150)
