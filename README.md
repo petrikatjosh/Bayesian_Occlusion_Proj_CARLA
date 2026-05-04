@@ -134,11 +134,16 @@ This plot shows the five phases in sequence. You can see the risk spike at pedes
 
 
 The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 0.8 represents the car's creep mode beside the truck in response to the potential threats hidden by occlusion (i.e. jaywalker)
-### Variable Correlations
-<img width="1200" height="1200" alt="variablecorrelations" src="https://github.com/user-attachments/assets/b38cdb0b-a6ff-4538-893e-199948acd106" />
+
+### Risk Correlations / Safety-Margin Structure
+<img width="2100" height="900" alt="risk_correlations" src="https://github.com/user-attachments/assets/5a556ef8-695b-4108-9aea-bd68e63a1c6c" />
 
 
-### System Latency
+### Phase-Colored Scatter Matrix
+<img width="1800" height="1800" alt="scatter_matrix_phased" src="https://github.com/user-attachments/assets/b0447afb-b345-44cc-b2d1-26764f929925" />
+
+
+### System Latency and Cross-Track Error
 <img width="1000" height="800" alt="system_latency_and_CTE" src="https://github.com/user-attachments/assets/5250b487-4eec-4aff-ac08-75974629fbf9" />
 
 
