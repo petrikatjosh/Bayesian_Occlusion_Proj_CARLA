@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from pandas.plotting import scatter_matrix
 import numpy as np
 import sys
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -28,6 +29,9 @@ sys.stdout = _Tee(sys.__stdout__, open(OUTPUT_DIR / 'analysis_log.txt', 'w', enc
 
 print(f"Loaded {len(df)} timesteps from risk_log.csv")
 print(f"Output folder: {OUTPUT_DIR}")
+
+shutil.copy2('risk_log.csv', OUTPUT_DIR / 'risk_log.csv')
+print(f"Archived source CSV to: {OUTPUT_DIR / 'risk_log.csv'}")
 
 # =============================================================================
 # 2. DETECT CRITICAL EVENTS (For Annotations)

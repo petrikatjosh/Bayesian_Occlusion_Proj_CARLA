@@ -1,8 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import shutil
+from datetime import datetime
+from pathlib import Path
 
 # Load the data
 df = pd.read_csv('research_data.csv')
+
+OUTPUT_DIR = Path('results') / f'research_metrics_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")}'
+OUTPUT_DIR.mkdir(parents=True, exist_ok=False)
+print(f"Output folder: {OUTPUT_DIR}")
+
+shutil.copy2('research_data.csv', OUTPUT_DIR / 'research_data.csv')
+print(f"Archived source CSV to: {OUTPUT_DIR / 'research_data.csv'}")
 
 # create a figure with 2 subplots
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
@@ -23,5 +33,6 @@ ax2.set_ylabel('Error (meters)')
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('research_metrics.png')
+plt.savefig(OUTPUT_DIR / 'research_metrics.png')
+print(f"Saved: {OUTPUT_DIR / 'research_metrics.png'}")
 plt.show()
