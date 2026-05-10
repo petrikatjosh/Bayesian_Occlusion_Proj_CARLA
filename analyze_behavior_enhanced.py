@@ -216,8 +216,8 @@ fig3, ax = plt.subplots(figsize=(10, 5))
 risk_operational = df[df['Risk'] < 1.0]['Risk']
 
 ax.hist(risk_operational, bins=50, color=color_risk, alpha=0.7, edgecolor='black')
-ax.axvline(x=0.6, color='orange', linestyle='--', linewidth=2, label='Creep Threshold')
-ax.axvline(x=0.85, color='red', linestyle='--', linewidth=2, label='Emergency Threshold')
+ax.axvline(x=0.6, color='orange', linestyle='--', linewidth=2, label='Creep Threshold (risk = 0.60)')
+ax.axvline(x=0.85, color='red', linestyle='--', linewidth=2, label='Critical Threshold (risk = 0.85)')
 ax.set_xlabel('Risk Value', fontsize=12)
 ax.set_ylabel('Frequency (Timesteps)', fontsize=12)
 ax.set_title('Risk Distribution During Operation (Excluding Emergency Stop Plateau)', fontsize=12)
@@ -230,11 +230,15 @@ ax.set_ylim(top=ymax * 1.15)
 
 # Add percentage annotations (placed below the legend on the left)
 total_steps = len(risk_operational)
-below_creep = len(risk_operational[risk_operational < 0.6]) / total_steps * 100
-in_creep = len(risk_operational[(risk_operational >= 0.6) & (risk_operational < 0.85)]) / total_steps * 100
-in_emergency = len(risk_operational[risk_operational >= 0.85]) / total_steps * 100
+below_creep = len(risk_operational[risk_operational <= 0.6]) / total_steps * 100
+in_creep = len(risk_operational[(risk_operational > 0.6) & (risk_operational <= 0.85)]) / total_steps * 100
+in_emergency = len(risk_operational[risk_operational > 0.85]) / total_steps * 100
 
-textstr = f'Below 0.6: {below_creep:.1f}%\nCreep Zone: {in_creep:.1f}%\nEmergency: {in_emergency:.1f}%'
+textstr = (
+    f'Normal: risk ≤ 0.60 ({below_creep:.1f}%)\n'
+    f'Creep: 0.60 < risk ≤ 0.85 ({in_creep:.1f}%)\n'
+    f'Non-saturated critical: 0.85 < risk < 1.00 ({in_emergency:.1f}%)'
+)
 ax.text(0.02, 0.70, textstr, transform=ax.transAxes, fontsize=10,
         verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.85))
 
