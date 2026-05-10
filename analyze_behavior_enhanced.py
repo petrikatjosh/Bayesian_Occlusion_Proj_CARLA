@@ -220,7 +220,7 @@ ax.axvline(x=0.6, color='orange', linestyle='--', linewidth=2, label='Creep Thre
 ax.axvline(x=0.85, color='red', linestyle='--', linewidth=2, label='Critical Threshold (risk = 0.85)')
 ax.set_xlabel('Risk Value', fontsize=12)
 ax.set_ylabel('Frequency (Timesteps)', fontsize=12)
-ax.set_title('Risk Distribution During Operation (Excluding Emergency Stop Plateau)', fontsize=12)
+ax.set_title('Risk Distribution During Operation (Excluding Saturated Emergency-Stop Plateau)', fontsize=12)
 ax.legend(loc='upper left', framealpha=0.9)
 ax.grid(True, alpha=0.3)
 
