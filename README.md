@@ -130,10 +130,15 @@ Processing latency averaged around 5 milliseconds per loop iteration. Plenty fas
 This plot shows the five phases in sequence. You can see the risk spike at pedestrian detection, the speed drop to zero during emergency stop, and the gradual recovery afterward. 
 
 ### Risk Distribution
-<img width="1000" height="500" alt="riskdistribution" src="https://github.com/user-attachments/assets/fe5a8ddb-3d9a-424e-81f3-edecdbe0d602" />
+<img width="1500" height="750" alt="risk_distribution" src="https://github.com/user-attachments/assets/a81a043e-cac4-4513-a1ff-503f63fd2b7e" />
 
 
-The bimodal distribution is intentional. The controller spends most of its time either in safe cruise (risk near 0) or in cautious creep (risk 0.6-0.85). The spike at 0.8 represents the car's creep mode beside the truck in response to the potential threats hidden by occlusion (i.e. jaywalker)
+This histogram reports the empirical timestep distribution of the recursive risk estimate during non-saturated operation. The saturated visible-threat reflex plateau (`Risk = 1.0`, `Speed = 0`, `Safety_Margin = -10`) is excluded because those samples are produced after the pedestrian is directly detected and the hard safety override takes control, rather than by the normal recursive risk estimator. The emergency-stop event is still shown in the temporal behavior plot and phase table; this histogram isolates the estimator's graded behavior outside the reflex-saturated state.
+
+In this run, the filtered set contains approximately 200 non-saturated samples from `risk_log.csv`: 55.5% in normal operation (`risk ≤ 0.60`), 42.5% in the cautious creep band (`0.60 < risk ≤ 0.85`), and 2.0% in the non-saturated critical band (`0.85 < risk < 1.00`). This is the desired structure: most non-saturated timesteps are either low-risk cruise/departure or bounded occlusion-aware creep, with only a few critical-threshold samples before the visible-threat reflex layer takes over. After fixing the endpoint of the scenario before the next intersection at x = -95, the risk distribution became finalized at roughly these numbers.
+
+Because the filtered set contains roughly 200 samples, one additional timestep above the critical threshold changes the displayed percentage by about 0.5%. Small run-to-run values such as 0.0%, 0.5%, 1.0%, or 2.0% should therefore be interpreted as threshold-edge timing differences, not as changes in the actual emergency-stop duration.
+
 
 ### Risk Correlations / Safety-Margin Structure
 <img width="2100" height="900" alt="risk_correlations" src="https://github.com/user-attachments/assets/5a556ef8-695b-4108-9aea-bd68e63a1c6c" />
